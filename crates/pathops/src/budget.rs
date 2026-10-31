@@ -112,7 +112,7 @@ impl Fenwick {
         let mut i = rank + 1;
         while let Some(c) = self.0.get_mut(i) {
             *c += by;
-            i += i.isolate_lowest_one();
+            i += lowest_one(i);
         }
     }
 
@@ -123,8 +123,15 @@ impl Fenwick {
             && let Some(c) = self.0.get(i)
         {
             n += c;
-            i -= i.isolate_lowest_one();
+            i -= lowest_one(i);
         }
         u64::try_from(n).unwrap_or(0)
     }
+}
+
+/// The lowest set bit of `i` (`i` is nonzero where called), the stable form of
+/// `usize::isolate_lowest_one` (still unstable on this toolchain, see
+/// rust-lang/rust#136909).
+fn lowest_one(i: usize) -> usize {
+    i & i.wrapping_neg()
 }
