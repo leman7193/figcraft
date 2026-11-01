@@ -14,12 +14,12 @@ COPY . .
 RUN cargo build --release --locked -p figcraft-server
 
 FROM debian:bookworm-slim
-RUN useradd --system --home-dir /data --shell /usr/sbin/nologin figcraft \
- && mkdir -p /data \
- && chown figcraft:figcraft /data
+# NB: deliberately no USER here (unlike Dockerfile): Render mounts its persistent
+# disk over /data owned by root, and the server chmods its data directory to 0700
+# on startup (store::lock), which fails with EPERM as an unprivileged user.
+# The container is single-tenant, so running as root loses nothing.
 COPY --from=build /src/target/release/figcraft-server /usr/local/bin/figcraft-server
 COPY packaging/server/run-render.sh /usr/local/bin/run-render.sh
-USER figcraft
 VOLUME /data
 EXPOSE 47900
 STOPSIGNAL SIGTERM
