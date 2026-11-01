@@ -1,0 +1,19 @@
+# Render Blueprint for figcraft-server: Dashboard -> New -> Blueprint -> pick this
+# repo. Uses packaging/server/Dockerfile.render. Needs a paid instance type
+# (Starter or up): persistent disks, which keep the files in /data across
+# deploys, are not available on free instances. The first deploy compiles the
+# server from source, so it takes a while; later deploys reuse the cache.
+# Management (the server key, publishing) is in docs/server.md.
+
+services:
+  - type: web
+    name: figcraft-server
+    runtime: docker
+    dockerfilePath: ./packaging/server/Dockerfile.render
+    dockerContext: .
+    plan: starter
+    disk:
+      name: figcraft-data
+      mountPath: /data
+      sizeGB: 1
+    healthCheckPath: /healthz

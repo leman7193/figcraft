@@ -1,0 +1,26 @@
+# figcraft-server on Render (https://render.com): build from the repository root with
+# `docker build -f packaging/server/Dockerfile.render -t figcraft-server .`, or point a
+# Render Blueprint at render.yaml in the repository root.
+#
+# Render injects $PORT (listen on it) and $RENDER_EXTERNAL_URL (the public https://
+# address, turned into the wss:// share-link URL); run-render.sh maps both onto the
+# server's flags. Files live in /data: attach a persistent disk there, or every deploy
+# wipes the files. `docker stop` sends SIGTERM: the server saves open files and stops
+# gracefully. Setup and settings are in docs/server.md ("Deploy on a Linux server").
+
+FROM rust:1-bookworm AS build
+WORKDIR /src
+COPY . .
+RUN cargo build --release --locked -p figcraft-server
+
+FROM debian:bookworm-slim
+RUN useradd --system --home-dir /data --shell /usr/sbin/nologin figcraft \
+ && mkdir -p /data \
+ && chown figcraft:figcraft /data
+COPY --from=build /src/target/release/figcraft-server /usr/local/bin/figcraft-server
+COPY packaging/server/run-render.sh /usr/local/bin/run-render.sh
+USER figcraft
+VOLUME /data
+EXPOSE 47900
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/run-render.sh"]
