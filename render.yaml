@@ -16,7 +16,7 @@ services:
     disk:
       name: figcraft-data
       mountPath: /data
-      sizeGB: 1
+      sizeGB: 5
     healthCheckPath: /healthz
 
   # FigCraft MCP Server: AI agent access via Model Context Protocol
