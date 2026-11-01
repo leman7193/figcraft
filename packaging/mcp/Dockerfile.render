@@ -1,0 +1,31 @@
+# figcraft MCP server on Render (https://render.com): build from the repository root with
+# `docker build -f packaging/mcp/Dockerfile.render -t figcraft-mcp .`, or point a
+# Render Blueprint at render-mcp.yaml in the repository root.
+#
+# Render injects $PORT (listen on it for HTTP health checks).
+# The MCP server speaks JSON-RPC 2.0 over stdio per the Model Context Protocol.
+# We use a Python bridge to handle HTTP health checks and TCP-to-stdio bridging.
+
+FROM rust:1-bookworm AS build
+WORKDIR /src
+COPY . .
+RUN cargo build --release --locked -p figcraft-cli
+
+FROM debian:bookworm-slim
+# Install necessary runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /src/target/release/figcraft-cli /usr/local/bin/figcraft-cli
+COPY packaging/mcp/run-render.sh /usr/local/bin/run-render.sh
+RUN chmod +x /usr/local/bin/run-render.sh
+
+# Render's PORT for HTTP health checks
+EXPOSE 47901
+# MCP connections on PORT + 1
+EXPOSE 47902
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/run-render.sh"]

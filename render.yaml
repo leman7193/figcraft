@@ -1,11 +1,12 @@
-# Render Blueprint for figcraft-server: Dashboard -> New -> Blueprint -> pick this
-# repo. Uses packaging/server/Dockerfile.render. Needs a paid instance type
-# (Starter or up): persistent disks, which keep the files in /data across
-# deploys, are not available on free instances. The first deploy compiles the
-# server from source, so it takes a while; later deploys reuse the cache.
-# Management (the server key, publishing) is in docs/server.md.
+# Render Blueprint for FigCraft services: Dashboard -> New -> Blueprint -> pick this
+# repo. This combines both figcraft-server and figcraft-mcp in one Blueprint.
+#
+# Management and deployment docs:
+# - figcraft-server: docs/server.md
+# - figcraft-mcp: docs/deploy-mcp-render.md
 
 services:
+  # FigCraft Server: file hosting, collaboration, team libraries
   - type: web
     name: figcraft-server
     runtime: docker
@@ -17,3 +18,23 @@ services:
       mountPath: /data
       sizeGB: 1
     healthCheckPath: /healthz
+
+  # FigCraft MCP Server: AI agent access via Model Context Protocol
+  - type: web
+    name: figcraft-mcp
+    runtime: docker
+    dockerfilePath: ./packaging/mcp/Dockerfile.render
+    dockerContext: .
+    plan: starter
+    disk:
+      name: figcraft-mcp-data
+      mountPath: /data
+      sizeGB: 5
+    healthCheckPath: /healthz
+    envVars:
+      - key: RUST_LOG
+        value: info
+      - key: FIGCRAFT_NO_SYSTEM_FONTS
+        value: "0"
+      - key: DEBUG
+        value: "0"
